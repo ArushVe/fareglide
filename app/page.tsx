@@ -3,24 +3,35 @@
 import { useState } from 'react';
 import {
   ArrowRight,
-  Bell,
+  BellRing,
   CalendarDays,
+  Check,
+  ChevronRight,
+  Clock3,
+  History,
   MapPin,
   Plane,
-  Plus,
+  Search,
   Settings2,
   Sparkles,
 } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { AirportCombobox } from '@/components/airport-combobox';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
   NativeSelect,
   NativeSelectOption,
 } from '@/components/ui/native-select';
-import { DEFAULT_USER_PREFERENCES } from '@/domain/defaults';
 import { airportLabel, findAirport, type Airport } from '@/data/airports';
+import { DEFAULT_USER_PREFERENCES } from '@/domain/defaults';
 
 type WatchDraft = {
   destination: Airport | null;
@@ -41,302 +52,370 @@ export default function Home() {
     DEFAULT_USER_PREFERENCES.homeAirportIata,
   );
   const [showPreferences, setShowPreferences] = useState(false);
-  const homeAirportName =
-    homeAirport === 'SEA' ? 'Seattle-Tacoma' : 'Selected airport';
+  const [accountOpen, setAccountOpen] = useState(false);
+
+  const origin = homeAirport || DEFAULT_USER_PREFERENCES.homeAirportIata;
+  const savedDestination = savedWatch?.destination
+    ? airportLabel(savedWatch.destination)
+    : null;
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-white/8 bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-xl border border-cyan-300/25 bg-cyan-300/10 text-cyan-300">
-              <Plane className="size-4 rotate-[-18deg]" aria-hidden="true" />
-            </span>
-            <div>
-              <p className="font-semibold tracking-tight">FareGlide</p>
-              <p className="text-xs text-muted-foreground">
-                Local fare intelligence
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            className="border-white/10 bg-white/3"
-            aria-expanded={showPreferences}
-            aria-controls="preferences-panel"
-            onClick={() => setShowPreferences((visible) => !visible)}
+    <main className="min-h-screen overflow-hidden bg-background text-foreground">
+      <header className="relative z-20 border-b border-white/7 bg-background/75 backdrop-blur-xl">
+        <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-5 lg:px-8">
+          <a
+            className="flex items-center gap-3"
+            href="#top"
+            aria-label="FareGlide home"
           >
-            <Settings2 data-icon="inline-start" />
-            Preferences
-          </Button>
-        </div>
-      </header>
+            <span className="grid size-9 place-items-center rounded-full bg-cyan-300 text-slate-950 shadow-lg shadow-cyan-400/15">
+              <Plane className="size-4 -rotate-12" aria-hidden="true" />
+            </span>
+            <span className="text-lg font-semibold tracking-[-0.03em]">
+              FareGlide
+            </span>
+          </a>
 
-      {showPreferences ? (
-        <section
-          id="preferences-panel"
-          className="border-b border-white/8 bg-[#091722]"
-          aria-label="Travel preferences"
-        >
-          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-4 sm:flex-row sm:items-end lg:px-8">
-            <label
-              htmlFor="home-airport"
-              className="w-full max-w-xs space-y-2 text-sm"
-            >
-              <span className="text-muted-foreground">Home airport</span>
-              <Input
-                id="home-airport"
-                value={homeAirport}
-                maxLength={3}
-                onChange={(event) =>
-                  setHomeAirport(
-                    event.target.value.replace(/[^a-z]/gi, '').toUpperCase(),
-                  )
-                }
-                className="h-10 border-white/10 bg-black/15 font-mono uppercase"
-                aria-describedby="home-airport-help"
-              />
-            </label>
-            <p
-              id="home-airport-help"
-              className="max-w-md pb-2 text-xs leading-5 text-muted-foreground"
-            >
-              New watches start here. Enter the three-letter airport code; each
-              watch can override it later.
-            </p>
-            <Button
-              className="h-10 bg-cyan-300 text-slate-950 hover:bg-cyan-200 sm:ml-auto"
-              disabled={homeAirport.length !== 3}
-              onClick={() => setShowPreferences(false)}
-            >
-              Save preference
-            </Button>
-          </div>
-        </section>
-      ) : null}
-
-      <div className="mx-auto grid max-w-7xl gap-6 px-5 py-7 lg:grid-cols-[230px_minmax(0,1fr)] lg:px-8">
-        <aside className="rounded-2xl border border-white/8 bg-card/65 p-4 lg:min-h-[calc(100vh-8.75rem)]">
-          <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            Workspace
-          </p>
-          <nav className="mt-3 space-y-1" aria-label="Main navigation">
+          <nav
+            className="hidden items-center gap-7 text-sm text-muted-foreground md:flex"
+            aria-label="Primary navigation"
+          >
             <a
-              className="flex items-center gap-3 rounded-xl bg-cyan-300/10 px-3 py-2.5 text-sm font-medium text-cyan-200"
-              href="#watch"
+              className="transition-colors hover:text-foreground"
+              href="#explore"
             >
-              <MapPin className="size-4" aria-hidden="true" />
-              Explore
+              Explore fares
             </a>
             <a
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground hover:bg-white/4 hover:text-foreground"
-              href="#watches"
+              className="transition-colors hover:text-foreground"
+              href="#how-it-works"
             >
-              <CalendarDays className="size-4" aria-hidden="true" />
-              My watches
+              How it works
             </a>
             <a
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground hover:bg-white/4 hover:text-foreground"
-              href="#reports"
+              className="transition-colors hover:text-foreground"
+              href="#alerts"
             >
-              <Bell className="size-4" aria-hidden="true" />
-              Daily reports
+              Price alerts
             </a>
           </nav>
 
-          <section className="mt-8 rounded-xl border border-white/8 bg-[#071521] p-4">
-            <p className="text-xs text-muted-foreground">Home airport</p>
-            <div className="mt-2 flex items-center gap-3">
-              <span className="grid size-9 place-items-center rounded-lg bg-cyan-300/10 font-mono text-sm font-semibold text-cyan-200">
-                {homeAirport || DEFAULT_USER_PREFERENCES.homeAirportIata}
-              </span>
-              <div>
-                <p className="text-sm font-medium">{homeAirportName}</p>
-                <p className="text-xs text-muted-foreground">
-                  Pacific time · USD
-                </p>
-              </div>
-            </div>
-          </section>
-        </aside>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              className="hidden text-muted-foreground hover:text-foreground sm:inline-flex"
+              onClick={() => setAccountOpen(true)}
+            >
+              Sign in
+            </Button>
+            <Button
+              className="rounded-full bg-white px-5 text-slate-950 hover:bg-cyan-100"
+              onClick={() => setAccountOpen(true)}
+            >
+              Create account
+            </Button>
+          </div>
+        </div>
+      </header>
 
-        <div className="min-w-0 space-y-6">
-          <section
-            id="watch"
-            className="overflow-hidden rounded-3xl border border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.10),transparent_34%),linear-gradient(145deg,rgba(15,35,49,0.96),rgba(7,18,29,0.98))] p-6 shadow-2xl shadow-black/20 md:p-8"
-          >
-            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
-              <div className="max-w-2xl">
-                <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">
-                  <Sparkles className="size-3.5" aria-hidden="true" />
-                  New flexible watch
-                </p>
-                <h1 className="mt-3 text-3xl font-semibold tracking-[-0.035em] md:text-4xl">
-                  Where do you want to go?
-                </h1>
-                <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground md:text-base">
-                  Start with a destination. FareGlide will check flexible dates
-                  from {homeAirport || 'your home airport'} once a day and build
-                  your private price history.
-                </p>
-              </div>
-              <span className="w-fit rounded-full border border-emerald-300/20 bg-emerald-300/8 px-3 py-1.5 text-xs font-medium text-emerald-200">
-                Daily collection
-              </span>
-            </div>
+      <section id="top" className="relative isolate">
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute left-1/2 top-[-16rem] h-[42rem] w-[70rem] -translate-x-1/2 rounded-[50%] bg-cyan-400/8 blur-3xl" />
+          <div className="absolute left-[9%] top-40 size-64 rounded-full bg-blue-500/5 blur-3xl" />
+          <div className="route-grid absolute inset-0 opacity-30" />
+        </div>
 
+        <div className="mx-auto max-w-7xl px-5 pb-14 pt-16 text-center lg:px-8 lg:pb-20 lg:pt-24">
+          <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-cyan-300/15 bg-cyan-300/7 px-3.5 py-1.5 text-xs font-medium text-cyan-200">
+            <Sparkles className="size-3.5" aria-hidden="true" />
+            Your private flight-price memory
+          </div>
+          <h1 className="mx-auto mt-6 max-w-4xl text-balance text-4xl font-semibold tracking-[-0.055em] sm:text-5xl lg:text-6xl">
+            Stop guessing when to book.
+            <span className="block text-cyan-300">Watch the fare move.</span>
+          </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
+            Pick a place. FareGlide remembers its prices, checks flexible dates
+            daily, and sends one clear 8:00 AM report when something meaningful
+            changes.
+          </p>
+
+          <div id="explore" className="mx-auto mt-11 max-w-6xl text-left">
             <form
-              className="mt-8 grid gap-4 md:grid-cols-[0.8fr_1.4fr_1fr_1fr_auto] md:items-end"
+              className="rounded-[1.75rem] border border-white/10 bg-[#0b1a25]/95 p-3 shadow-2xl shadow-black/35 ring-1 ring-cyan-300/5 backdrop-blur-xl"
               onSubmit={(event) => {
                 event.preventDefault();
-                setSavedWatch(draft);
+                if (draft.destination) setSavedWatch(draft);
               }}
             >
-              <label htmlFor="watch-origin" className="space-y-2 text-sm">
-                <span className="text-muted-foreground">From</span>
-                <Input
-                  id="watch-origin"
-                  value={
-                    homeAirport || DEFAULT_USER_PREFERENCES.homeAirportIata
-                  }
-                  readOnly
-                  aria-label="Origin airport"
-                  className="h-11 border-white/10 bg-black/15 font-medium"
-                />
-              </label>
-              <div className="space-y-2 text-sm">
-                <span className="text-muted-foreground">Destination</span>
-                <AirportCombobox
-                  id="watch-destination"
-                  value={draft.destination}
-                  onValueChange={(destination) =>
-                    setDraft({ ...draft, destination })
-                  }
-                />
+              <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(10rem,.8fr)_minmax(11rem,.9fr)_auto] lg:items-end">
+                <label
+                  htmlFor="watch-origin"
+                  className="min-w-0 space-y-2 rounded-2xl px-3 py-2"
+                >
+                  <span className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                    <Plane className="size-3.5" aria-hidden="true" />
+                    From
+                  </span>
+                  <Input
+                    id="watch-origin"
+                    value={origin}
+                    readOnly
+                    aria-label="Origin airport"
+                    className="h-11 w-full border-white/10 bg-black/15 font-semibold"
+                  />
+                </label>
+
+                <div className="min-w-0 space-y-2 rounded-2xl px-3 py-2">
+                  <span className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                    <MapPin className="size-3.5" aria-hidden="true" />
+                    To
+                  </span>
+                  <AirportCombobox
+                    id="watch-destination"
+                    value={draft.destination}
+                    onValueChange={(destination) =>
+                      setDraft({ ...draft, destination })
+                    }
+                  />
+                </div>
+
+                <label
+                  htmlFor="watch-window"
+                  className="min-w-0 space-y-2 rounded-2xl px-3 py-2"
+                >
+                  <span className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                    <CalendarDays className="size-3.5" aria-hidden="true" />
+                    Travel window
+                  </span>
+                  <NativeSelect
+                    id="watch-window"
+                    className="w-full"
+                    value={draft.horizon}
+                    onChange={(event) =>
+                      setDraft({ ...draft, horizon: event.target.value })
+                    }
+                    aria-label="Travel window"
+                  >
+                    <NativeSelectOption>Next 3 months</NativeSelectOption>
+                    <NativeSelectOption>Next 6 months</NativeSelectOption>
+                    <NativeSelectOption>Next 12 months</NativeSelectOption>
+                  </NativeSelect>
+                </label>
+
+                <label
+                  htmlFor="watch-trip-type"
+                  className="min-w-0 space-y-2 rounded-2xl px-3 py-2"
+                >
+                  <span className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                    <ArrowRight className="size-3.5" aria-hidden="true" />
+                    Trip type
+                  </span>
+                  <NativeSelect
+                    id="watch-trip-type"
+                    className="w-full"
+                    value={draft.tripType}
+                    onChange={(event) =>
+                      setDraft({ ...draft, tripType: event.target.value })
+                    }
+                    aria-label="Trip type"
+                  >
+                    <NativeSelectOption>
+                      Round trip + one way
+                    </NativeSelectOption>
+                    <NativeSelectOption>Round trip</NativeSelectOption>
+                    <NativeSelectOption>One way</NativeSelectOption>
+                  </NativeSelect>
+                </label>
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={!draft.destination}
+                  className="m-2 h-11 rounded-xl bg-cyan-300 px-5 text-slate-950 shadow-lg shadow-cyan-400/10 hover:bg-cyan-200 lg:ml-0"
+                >
+                  <Search data-icon="inline-start" />
+                  Watch fare
+                </Button>
               </div>
-              <label htmlFor="watch-window" className="space-y-2 text-sm">
-                <span className="text-muted-foreground">When</span>
-                <NativeSelect
-                  id="watch-window"
-                  className="w-full"
-                  value={draft.horizon}
-                  onChange={(event) =>
-                    setDraft({ ...draft, horizon: event.target.value })
-                  }
-                  aria-label="Travel window"
+
+              <div className="flex flex-col gap-3 border-t border-white/7 px-3 pb-1 pt-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                  <span>Economy</span>
+                  <span>1 traveler</span>
+                  <span>1 stop or fewer</span>
+                  <span>7–14 nights</span>
+                </div>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 text-left text-cyan-200 transition-colors hover:text-cyan-100"
+                  onClick={() => setShowPreferences((visible) => !visible)}
+                  aria-expanded={showPreferences}
+                  aria-controls="preferences-panel"
                 >
-                  <NativeSelectOption>Next 3 months</NativeSelectOption>
-                  <NativeSelectOption>Next 6 months</NativeSelectOption>
-                  <NativeSelectOption>Next 12 months</NativeSelectOption>
-                </NativeSelect>
-              </label>
-              <label htmlFor="watch-trip-type" className="space-y-2 text-sm">
-                <span className="text-muted-foreground">Track</span>
-                <NativeSelect
-                  id="watch-trip-type"
-                  className="w-full"
-                  value={draft.tripType}
-                  onChange={(event) =>
-                    setDraft({ ...draft, tripType: event.target.value })
-                  }
-                  aria-label="Trip type"
-                >
-                  <NativeSelectOption>Round trip + one way</NativeSelectOption>
-                  <NativeSelectOption>Round trip</NativeSelectOption>
-                  <NativeSelectOption>One way</NativeSelectOption>
-                </NativeSelect>
-              </label>
-              <Button
-                type="submit"
-                size="lg"
-                className="h-11 bg-cyan-300 px-4 text-slate-950 hover:bg-cyan-200"
-              >
-                <Plus data-icon="inline-start" />
-                Add watch
-              </Button>
+                  <Settings2 className="size-3.5" aria-hidden="true" />
+                  Home airport: {origin}
+                </button>
+              </div>
             </form>
 
-            <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <span className="rounded-full border border-white/8 bg-white/3 px-3 py-1.5">
-                Economy
-              </span>
-              <span className="rounded-full border border-white/8 bg-white/3 px-3 py-1.5">
-                1 traveler
-              </span>
-              <span className="rounded-full border border-white/8 bg-white/3 px-3 py-1.5">
-                {DEFAULT_USER_PREFERENCES.defaultMaximumStops} stop or fewer
-              </span>
-              <span className="rounded-full border border-white/8 bg-white/3 px-3 py-1.5">
-                7–14 nights
-              </span>
-            </div>
-          </section>
+            {showPreferences ? (
+              <div
+                id="preferences-panel"
+                className="mx-auto mt-3 flex max-w-xl flex-col gap-3 rounded-2xl border border-white/9 bg-[#0b1a25] p-4 text-left shadow-xl sm:flex-row sm:items-end"
+              >
+                <label
+                  htmlFor="home-airport"
+                  className="flex-1 space-y-2 text-sm"
+                >
+                  <span className="text-muted-foreground">
+                    Home airport code
+                  </span>
+                  <Input
+                    id="home-airport"
+                    value={homeAirport}
+                    maxLength={3}
+                    onChange={(event) =>
+                      setHomeAirport(
+                        event.target.value
+                          .replace(/[^a-z]/gi, '')
+                          .toUpperCase(),
+                      )
+                    }
+                    className="h-10 border-white/10 bg-black/15 font-mono uppercase"
+                  />
+                </label>
+                <Button
+                  className="h-10 bg-white text-slate-950 hover:bg-cyan-100"
+                  disabled={homeAirport.length !== 3}
+                  onClick={() => setShowPreferences(false)}
+                >
+                  Save
+                </Button>
+              </div>
+            ) : null}
 
-          <section
-            id="watches"
-            className="grid gap-4 md:grid-cols-[1.35fr_0.65fr]"
-          >
-            <article className="rounded-2xl border border-white/8 bg-card/60 p-5">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                    Preview watch
-                  </p>
-                  <div className="mt-3 flex items-center gap-3 text-lg font-semibold">
-                    <span>
-                      {homeAirport || DEFAULT_USER_PREFERENCES.homeAirportIata}
-                    </span>
-                    <ArrowRight
-                      className="size-4 text-cyan-300"
-                      aria-hidden="true"
-                    />
-                    <span>
-                      {savedWatch?.destination
-                        ? airportLabel(savedWatch.destination)
-                        : 'Hong Kong (HKG)'}
-                    </span>
-                  </div>
-                </div>
-                <span className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-muted-foreground">
-                  {savedWatch ? 'Watch staged' : 'Draft'}
+            {savedDestination ? (
+              <div className="mx-auto mt-4 flex max-w-3xl flex-col gap-3 rounded-2xl border border-emerald-300/15 bg-emerald-300/7 px-5 py-4 text-left sm:flex-row sm:items-center">
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-emerald-300/15 text-emerald-200">
+                  <Check className="size-4" aria-hidden="true" />
                 </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-emerald-50">
+                    Your watch is ready
+                  </p>
+                  <p className="mt-0.5 truncate text-sm text-emerald-100/65">
+                    {origin} → {savedDestination} · {savedWatch?.horizon} ·
+                    first report tomorrow at 8:00 AM
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  className="justify-start text-emerald-100 hover:bg-emerald-200/10 hover:text-white"
+                >
+                  View watch <ChevronRight data-icon="inline-end" />
+                </Button>
               </div>
-              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {[
-                  ['Window', savedWatch?.horizon || 'Next 6 months'],
-                  ['Trip length', '7–14 nights'],
-                  ['Trips', savedWatch?.tripType || 'Both types'],
-                  ['Refresh', 'Once daily'],
-                ].map(([label, value]) => (
-                  <div
-                    key={label}
-                    className="rounded-xl border border-white/7 bg-black/10 p-3"
-                  >
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                    <p className="mt-1 text-sm font-medium">{value}</p>
-                  </div>
-                ))}
-              </div>
-            </article>
+            ) : null}
+          </div>
 
-            <article
-              id="reports"
-              className="rounded-2xl border border-white/8 bg-card/60 p-5"
-            >
-              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                Next report
-              </p>
-              <p className="mt-3 text-2xl font-semibold tracking-tight">
-                Tomorrow · 8:00 AM
-              </p>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Cheapest dates, day-over-day movement, and an evidence-based
-                booking signal.
-              </p>
-            </article>
-          </section>
+          <div className="mt-8 flex flex-wrap justify-center gap-x-7 gap-y-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-2">
+              <Clock3 className="size-3.5 text-cyan-300" /> Checks once daily
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <History className="size-3.5 text-cyan-300" /> Builds private
+              price history
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <BellRing className="size-3.5 text-cyan-300" /> Emails only useful
+              changes
+            </span>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <section
+        id="how-it-works"
+        className="border-t border-white/7 bg-white/[0.015]"
+      >
+        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 md:grid-cols-[.75fr_1.25fr] md:items-center lg:px-8 lg:py-18">
+          <div className="text-left">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
+              Made for flexible travelers
+            </p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">
+              One calm report. No tab-refresh habit.
+            </h2>
+            <p className="mt-4 text-sm leading-6 text-muted-foreground">
+              FareGlide turns scattered fare checks into a useful history, then
+              tells you when the signal is worth your attention.
+            </p>
+          </div>
+          <div id="alerts" className="grid gap-3 sm:grid-cols-3">
+            {[
+              [
+                '01',
+                'Choose broadly',
+                'Pick a destination and a flexible time horizon.',
+              ],
+              [
+                '02',
+                'We remember',
+                'Daily observations become your route’s price history.',
+              ],
+              [
+                '03',
+                'You decide',
+                'Get a concise booking signal in the morning.',
+              ],
+            ].map(([number, title, body]) => (
+              <article
+                key={number}
+                className="rounded-2xl border border-white/8 bg-[#091722] p-5 text-left"
+              >
+                <span className="font-mono text-xs text-cyan-300">
+                  {number}
+                </span>
+                <h3 className="mt-5 font-medium">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  {body}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <Dialog open={accountOpen} onOpenChange={setAccountOpen}>
+        <DialogContent className="border border-white/10 bg-[#0b1a25] p-6 sm:max-w-md">
+          <DialogHeader>
+            <span className="mb-3 grid size-10 place-items-center rounded-full bg-cyan-300 text-slate-950">
+              <Plane className="size-4 -rotate-12" aria-hidden="true" />
+            </span>
+            <DialogTitle className="text-xl">
+              Your FareGlide account
+            </DialogTitle>
+            <DialogDescription className="leading-6">
+              Accounts keep watches, report history, and preferences private
+              across devices.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-2 rounded-xl border border-cyan-300/12 bg-cyan-300/6 p-4 text-sm leading-6 text-cyan-50/80">
+            Secure sign-in will activate with the hosted version. No passwords
+            will be stored by FareGlide.
+          </div>
+          <Button
+            disabled
+            className="mt-1 w-full bg-white text-slate-950 opacity-70"
+          >
+            Continue securely after publishing
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            Local preview · account data is not being collected
+          </p>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
