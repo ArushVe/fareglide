@@ -2,7 +2,7 @@
 
 FareGlide is a local-first flight price tracker that builds its own reusable fare history. Add a route, let FareGlide observe it on an adaptive schedule, inspect price trends, and receive high-signal alerts when the fare changes meaningfully.
 
-> **Project status:** architecture and product planning. The existing web shell is only a scaffold; implementation has not officially started.
+> **Project status:** foundation implementation is underway. The first local slice includes SEA home-airport defaults, flexible trip-watch modeling, normalized search keys, adaptive scheduling, a simulated provider, and the initial SQLite schema.
 
 ## Product direction
 
@@ -29,6 +29,7 @@ Google Flights is not the production provider. Before any public release, replac
 - [System architecture](docs/ARCHITECTURE.md)
 - [Data sources and collection policy](docs/DATA_SOURCES.md)
 - [Development and pull-request workflow](docs/DEVELOPMENT.md)
+- [Hosting and daily reports](docs/HOSTING.md)
 - [Architecture decisions](docs/decisions/README.md)
 - [Downloadable system-design PDF](docs/fareglide-system-design.pdf)
 
@@ -51,6 +52,8 @@ Quality checks:
 
 ```bash
 pnpm lint
+pnpm test
+pnpm typecheck
 pnpm build
 ```
 

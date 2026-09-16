@@ -57,6 +57,8 @@ Before review:
 
 ```bash
 pnpm lint
+pnpm test
+pnpm typecheck
 pnpm build
 ```
 

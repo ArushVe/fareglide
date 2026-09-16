@@ -13,7 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Untitled site',
+  title: 'FareGlide | Local fare intelligence',
+  description:
+    'Track flexible flight prices from your home airport and get a clear daily booking report.',
 };
 
 export default function RootLayout({
